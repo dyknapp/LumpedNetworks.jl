@@ -1,0 +1,6 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+LumpedNetworks = "2b2e9c5b-a893-4295-b342-8ba978158183"
+
+[sources]
+LumpedNetworks = {path = ".."}
