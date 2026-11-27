@@ -6,9 +6,9 @@ using InteractiveUtils
 
 # ╔═╡ 9171cb60-e8b3-11f1-890a-55487b8d3558
 begin
-	using Plots
-	using Graphs
-	using Unitful
+    using Plots
+    using Graphs
+    using Unitful
 end
 
 # ╔═╡ f6a247be-7d61-4d9e-96f1-329c07acee0e
@@ -16,62 +16,67 @@ abstract type Component end
 
 # ╔═╡ 5504e617-d6a4-4c53-93db-261d5cda8c30
 function impedance(
-		f::Unitful.Frequency, 
-		comp::Component)::Unitful.ElectricalResistance
-	error("Unimplemented")
+        f::Unitful.Frequency,
+        comp::Component
+    )::Unitful.ElectricalResistance
+    error("Unimplemented")
 end
 
 # ╔═╡ fc8c26b2-4555-4d7e-aa3e-9c9dc2597753
-struct Resistor<:Component
-	R::Unitful.ElectricalResistance
-	a::Int; b::Int
+struct Resistor <: Component
+    R::Unitful.ElectricalResistance
+    a::Int; b::Int
 end
 
 # ╔═╡ fa6a4a69-cd22-47f4-a1b3-08db75038264
 function impedance(
-		f::Unitful.Frequency,
-		comp::Resistor)::Unitful.ElectricalResistance
-	return comp.R
+        f::Unitful.Frequency,
+        comp::Resistor
+    )::Unitful.ElectricalResistance
+    return comp.R
 end
 
 # ╔═╡ 5f014e2e-76cb-480a-899a-c64f720f8ffa
-struct Inductor<:Component
-	L::Unitful.Inductance
-	a::Int; b::Int
+struct Inductor <: Component
+    L::Unitful.Inductance
+    a::Int; b::Int
 end
 
 # ╔═╡ 2c5b8847-cd73-49ff-85b4-4206d704aa1e
 function impedance(
-		f::Unitful.Frequency, 
-		comp::Inductor)::Unitful.ElectricalResistance
-	return im * (2π*f) * comp.L
+        f::Unitful.Frequency,
+        comp::Inductor
+    )::Unitful.ElectricalResistance
+    return uconvert(u"Ω", im * (2π * f) * comp.L)
 end
 
 # ╔═╡ 1449e2e5-3966-47b9-ba46-c53c82286069
-struct Capacitor<:Component
-	C::Unitful.Capacitance
-	a::Int; b::Int
+struct Capacitor <: Component
+    C::Unitful.Capacitance
+    a::Int; b::Int
 end
 
 # ╔═╡ 6ae548e1-d52b-447e-bdd2-7a56f250cf42
 # Multiple dispatch convenience constructors
 begin
-	component(R::Unitful.ElectricalResistance, a, b) = Resistor(R, a, b)
-	component(L::Unitful.Inductance, a, b) = Inductor(L, a, b)
-	component(C::Unitful.Capacitance, a, b) = Capacitor(C, a, b)
+    component(R::Unitful.ElectricalResistance, a, b) = Resistor(R, a, b)
+    component(L::Unitful.Inductance, a, b) = Inductor(L, a, b)
+    component(C::Unitful.Capacitance, a, b) = Capacitor(C, a, b)
+    component(Z::Unitful.Quantity) = component(Z, 0, 0)
 end
 
 # ╔═╡ 12167105-e27e-423c-8098-76e587592bf9
 function impedance(
-		f::Unitful.Frequency, 
-		comp::Capacitor)::Unitful.ElectricalResistance
-	return uconvert(u"Ω", 1 / (im * (2π*f) * comp.C))
+        f::Unitful.Frequency,
+        comp::Capacitor
+    )::Unitful.ElectricalResistance
+    return uconvert(u"Ω", 1 / (im * (2π * f) * comp.C))
 end
 
 # ╔═╡ 07259b11-4dee-462d-934f-76fb7da172ef
 struct Circuit
     components::Vector{Component}
-    
+
     function Circuit()
         return new(Component[])
     end
@@ -86,7 +91,7 @@ end
 
 # ╔═╡ 96ec64a2-20a1-4034-9eea-ca02cceedaea
 # netlist-like alias
-add!(circ::Circuit, nodes::Pair{Int,Int}, val) =
+add!(circ::Circuit, nodes::Pair{Int, Int}, val) =
     push!(circ, component(val, nodes.first, nodes.second))
 
 # ╔═╡ 6dffc7ab-704c-482b-9f9d-c351c233dcc4
@@ -94,26 +99,21 @@ add!(circ::Circuit, nodes::Pair{Int,Int}, val) =
 Graphs.SimpleGraph(circ::Circuit) =
     SimpleGraph(Edge.([(c.a, c.b) for c in circ.components]))
 
-# ╔═╡ 93159e88-16ce-4792-839e-2749116452f6
-function impedance(edge::Edge, circuit::Circuit)
-	error("unimplemented")
-end
-
 # ╔═╡ 434cbc94-8163-481b-82e5-7c1a0e085a9f
 test_cap = Capacitor(
-	1.0u"nF",
-	1, 2,
+    1.0u"nF",
+    1, 2,
 )
 
 # ╔═╡ 965ed172-55a6-47f3-8aae-23abfdbb879d
 # LC tank circuit
 test_circuit = begin
-	c = Circuit()
-	add!(c, 1 => 2, 50u"Ω")
-	add!(c, 2 => 3, 1u"μH")
-	add!(c, 3 => 4, 1u"Ω")
-	add!(c, 2 => 4, 20u"nF")
-	c;
+    c = Circuit()
+    add!(c, 1 => 2, 50u"Ω")
+    add!(c, 2 => 3, 1u"μH")
+    add!(c, 3 => 4, 1u"Ω")
+    add!(c, 2 => 4, 20u"nF")
+    c
 end
 
 # ╔═╡ 8ae009d6-00e9-4a68-a7ad-d43df3ed1224
@@ -121,10 +121,10 @@ function impedance(f, circ::Circuit, a::Int, b::Int)
     n = maximum(max(c.a, c.b) for c in circ.components)
     Y = zeros(ComplexF64, n, n)
     for c in circ.components
-        y = ustrip(u"S", 1/impedance(f, c))
+        y = ustrip(u"S", 1 / impedance(f, c))
         i, j = c.a, c.b
-        Y[i,i] += y;  Y[j,j] += y
-        Y[i,j] -= y;  Y[j,i] -= y
+        Y[i, i] += y;  Y[j, j] += y
+        Y[i, j] -= y;  Y[j, i] -= y
     end
     keep = setdiff(1:n, b)
     I = zeros(ComplexF64, n); I[a] = 1
@@ -135,8 +135,8 @@ end
 # ╔═╡ cfe0b9c6-1938-4d6f-b0f5-803980fcb3df
 # 1nF capacitor @ (1/2π)MHz≈159kHz: should be -im*1kΩ
 impedance(
-	(0.5/π)u"MHz",
-	test_cap,
+    (0.5 / π)u"MHz",
+    test_cap,
 )
 
 # ╔═╡ 5c42e235-7d45-47f0-ae6d-348aad8bcadf
@@ -148,9 +148,9 @@ f_range = [f * 1u"Hz" for f in exp10.(LinRange(5.5, 6.5, 1024))]
 # ╔═╡ 306329c9-8bba-4b04-8c44-70cad300a061
 # Close impedance match at resonance
 plot(
-	uconvert.(u"MHz", f_range),
-	abs.(impedance.(f_range, Ref(test_circuit), 2, 4)),
-	xscale=:log10,
+    uconvert.(u"MHz", f_range),
+    abs.(impedance.(f_range, Ref(test_circuit), 2, 4)),
+    xscale = :log10,
 )
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1438,7 +1438,6 @@ uuid = "23338594-aafe-5451-b93e-139f81909106"
 # ╠═d6d8067b-3291-4689-9fc7-11cea732a7e2
 # ╠═96ec64a2-20a1-4034-9eea-ca02cceedaea
 # ╠═6dffc7ab-704c-482b-9f9d-c351c233dcc4
-# ╠═93159e88-16ce-4792-839e-2749116452f6
 # ╠═434cbc94-8163-481b-82e5-7c1a0e085a9f
 # ╠═cfe0b9c6-1938-4d6f-b0f5-803980fcb3df
 # ╠═965ed172-55a6-47f3-8aae-23abfdbb879d
